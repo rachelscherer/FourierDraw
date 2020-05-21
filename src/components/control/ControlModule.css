@@ -1,0 +1,69 @@
+.control-module {
+  position: absolute;
+  top: 20px;
+  right: 70px;
+}
+
+.control-module__button {
+  width: 100px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  padding: 10px;
+}
+
+.dark-red {
+  background-color: #cc0000;
+  transition: background-color 0.1s ease-out;
+}
+
+.dark-red:hover {
+  background-color: #990000;
+  transition: background-color 0.1s ease;
+  cursor: pointer;
+}
+
+.dark-red:active {
+  background-color: #880000;
+  transition: background-color 0.1s ease;
+}
+
+.dark-green {
+  background-color: #009933;
+  transition: background-color 0.1s ease-out;
+}
+
+.dark-green:hover {
+  background-color: #006633;
+  transition: background-color 0.1s ease;
+  cursor: pointer;
+}
+
+.dark-green:active {
+  background-color: #005533;
+  transition: background-color 0.1s ease;
+}
+
+.dark-blue {
+  background-color: #0033cc;
+  transition: background-color 0.1s ease-out;
+}
+
+.dark-blue:hover {
+  background-color: #003399;
+  transition: background-color 0.1s ease;
+  cursor: pointer;
+}
+
+.dark-blue:active {
+  background-color: #003388;
+  transition: background-color 0.1s ease;
+}
+
+.control-module__text {
+  padding-left: 15px;
+  letter-spacing: 0.03em;
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* IE10+/Edge */
+  user-select: none; /* Standard */
+}
