@@ -6,7 +6,7 @@ export default class Clear extends Component {
   render() {
     return (
       <div className="control-module__button dark-blue">
-        <FontAwesomeIcon icon={faMinusCircle} size="xl" fixedWidth />
+        <FontAwesomeIcon icon={faMinusCircle} fixedWidth />
         <span className="control-module__text">Clear</span>
       </div>
     );

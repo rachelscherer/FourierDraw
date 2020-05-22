@@ -9,9 +9,15 @@ export default class ControlModule extends Component {
   render() {
     return (
       <div className="control-module">
-        <Play />
-        <Pause />
-        <Clear />
+        <div onClick={() => this.props.play()}>
+          <Play />
+        </div>
+        <div onClick={() => this.props.pause()}>
+          <Pause />
+        </div>
+        <div onClick={() => this.props.clearDrawing()}>
+          <Clear />
+        </div>
       </div>
     );
   }

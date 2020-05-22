@@ -6,7 +6,7 @@ export default class Pause extends Component {
   render() {
     return (
       <div className="control-module__button dark-red">
-        <FontAwesomeIcon icon={faPause} size="xl" fixedWidth />
+        <FontAwesomeIcon icon={faPause} fixedWidth />
         <span className="control-module__text">Pause</span>
       </div>
     );

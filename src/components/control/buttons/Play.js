@@ -6,7 +6,7 @@ export default class Play extends Component {
   render() {
     return (
       <div className="control-module__button dark-green">
-        <FontAwesomeIcon icon={faPlay} size="xl" fixedWidth />
+        <FontAwesomeIcon icon={faPlay} fixedWidth />
         <span className="control-module__text">Play</span>
       </div>
     );
