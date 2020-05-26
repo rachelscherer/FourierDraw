@@ -5,8 +5,8 @@ export default class Canvas extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      cR: [],
-      cTheta: [],
+      frameCounter: 0,
+      epicycleCircles: [],
       drawingComplete: false,
       isPlaying: false,
       lines: [],
@@ -14,7 +14,7 @@ export default class Canvas extends Component {
       innerWidth: 0,
       initialWidth: 0,
       initialHeight: 0,
-      numCircles: 101,
+      numCircles: 150,
     };
 
     this.drawArea = React.createRef();
@@ -22,6 +22,10 @@ export default class Canvas extends Component {
 
   componentDidMount() {
     this.getInnerDimensions();
+    setInterval(
+      () => this.setState({ frameCounter: this.state.frameCounter + 1 }),
+      50
+    );
     window.addEventListener("resize", this.getInnerDimensions, false);
   }
 
@@ -44,7 +48,16 @@ export default class Canvas extends Component {
   }
 
   getDrawing = (lines, complete) => {
-    const { cR, cTheta } = this.state;
+    const {
+      epicycleCircles,
+      frameCounter,
+      initialHeight,
+      initialWidth,
+    } = this.state;
+    const N = lines.length;
+    const twoPi = 2 * Math.PI;
+    let x = initialWidth / 2;
+    let y = initialHeight / 2;
     let prevLine = lines[0];
     return (
       <svg className="draw-area-svg">
@@ -55,7 +68,8 @@ export default class Canvas extends Component {
         {complete &&
           lines.length > 0 &&
           this.drawLine(lines[0], lines[lines.length - 1])}
-        {cR.length > 0 && this.drawEpicycleCircles(cR, cTheta)}
+        {epicycleCircles.length > 0 &&
+          this.getFrame(frameCounter % N, epicycleCircles, x, y, N, twoPi)}
       </svg>
     );
   };
@@ -74,20 +88,89 @@ export default class Canvas extends Component {
     );
   };
 
-  drawEpicycleCircles = (r, theta) => {
-    const { initialHeight, initialWidth } = this.state;
+  animateEpicycleCircles = (lines, epicycleCircles) => {
+    const N = lines.length;
+    const twoPi = 2 * Math.PI;
+    let x = this.state.initialWidth / 2;
+    let y = this.state.initialHeight / 2;
+    return function () {
+      for (let i = 0; i < N; i++) {
+        setTimeout(function () {
+          console.log(i);
+          this.getFrame(i, epicycleCircles, x, y, N, twoPi);
+        }, i * 100);
+      }
+    };
+  };
 
+  getFrame = (i, epicycleCircles, x, y, N, twoPi) => {
+    let frame = [];
+    for (let j = 0; j < epicycleCircles.length; j++) {
+      const { r, kPrime, theta } = epicycleCircles[j];
+      console.log(r + " " + kPrime + " " + theta);
+      const newTheta = (kPrime * i * twoPi) / N + theta;
+      const endX = x + r * Math.cos(newTheta);
+      const endY = y - r * Math.sin(newTheta);
+      frame.push(this.drawCircle(x, y, endX, endY, newTheta, r));
+      x = endX;
+      y = endY;
+    }
+    return frame;
+  };
+
+  drawCircle = (x, y, endX, endY, theta, radius) => {
+    const arrowAngle = (5 * Math.PI) / 6;
+    return (
+      <React.Fragment>
+        <circle
+          r={radius}
+          cx={x}
+          cy={y}
+          fillOpacity="0"
+          stroke="#333333"
+          strokeWidth="1"
+        />
+        <line
+          x1={x}
+          y1={y}
+          x2={endX}
+          y2={endY}
+          strokeWidth="1"
+          stroke="#FF1493"
+        />
+        <line
+          x1={endX}
+          y1={endY}
+          x2={endX + (radius / 10) * Math.cos(theta - arrowAngle)}
+          y2={endY - (radius / 10) * Math.sin(theta - arrowAngle)}
+          strokeWidth="1"
+          stroke="#FF1493"
+        />
+        <line
+          x1={endX}
+          y1={endY}
+          x2={endX + (radius / 10) * Math.cos(theta + arrowAngle)}
+          y2={endY - (radius / 10) * Math.sin(theta + arrowAngle)}
+          strokeWidth="1"
+          stroke="#FF1493"
+        />
+      </React.Fragment>
+    );
+  };
+
+  drawEpicycleCircles = (epicycleCircles) => {
+    const { initialHeight, initialWidth } = this.state;
     let drawing = [];
     let cxPath = initialWidth / 2;
     let cyPath = initialHeight / 2;
-    let index = Math.floor(r.length / 2);
-    let counter = 1;
 
-    while (index >= 0 && index < r.length) {
+    for (let i = 0; i < epicycleCircles.length; i++) {
+      const { r, theta } = epicycleCircles[i];
+      //Draw the circle
       drawing.push(
         <circle
-          key={index}
-          r={r[index]}
+          key={i}
+          r={r}
           cx={cxPath}
           cy={cyPath}
           fillOpacity="0"
@@ -96,9 +179,10 @@ export default class Canvas extends Component {
         />
       );
 
-      let cxNext = cxPath + r[index] * Math.cos(theta[index]);
-      let cyNext = cyPath + r[index] * Math.sin(theta[index]);
+      let cxNext = cxPath + r * Math.cos(theta);
+      let cyNext = cyPath - r * Math.sin(theta);
 
+      //Draw a vector from the center of the circle
       drawing.push(
         <line
           x1={cxPath}
@@ -106,88 +190,107 @@ export default class Canvas extends Component {
           x2={cxNext}
           y2={cyNext}
           strokeWidth="1"
-          stroke="#666666"
+          stroke="#FF1493"
+        />
+      );
+
+      drawing.push(
+        <line
+          x1={cxNext}
+          y1={cyNext}
+          x2={cxNext + (r / 10) * Math.cos(theta - (5 * Math.PI) / 6)}
+          y2={cyNext - (r / 10) * Math.sin(theta - (5 * Math.PI) / 6)}
+          strokeWidth="1"
+          stroke="#FF1493"
+        />
+      );
+
+      drawing.push(
+        <line
+          x1={cxNext}
+          y1={cyNext}
+          x2={cxNext + (r / 10) * Math.cos(theta + (5 * Math.PI) / 6)}
+          y2={cyNext - (r / 10) * Math.sin(theta + (5 * Math.PI) / 6)}
+          strokeWidth="1"
+          stroke="#FF1493"
         />
       );
 
       cxPath = cxNext;
       cyPath = cyNext;
-
-      if (counter % 2 === 0) {
-        index += counter++;
-      } else {
-        index -= counter++;
-      }
     }
     return drawing.map((currentElement) => {
       return currentElement;
     });
   };
 
+  /*
+        Discrete Fourier Transform:
+
+        Xk = Sum from n = 0 to N - 1 [Xn * exp(-2πikn/N)]
+        Xk = Sum from n = 0 to N - 1 [Xn * (cos(2πkn/N) - i*sin(2πkn/N))]
+
+        Let Xn = u + iv, then foil
+
+        Xk = Sum from n = 0 to N - 1 [(u*cos(2πkn/N) + v*sin(2πkn/N)) + i(v*cos(2πkn/N) - u*sin(2πkn/N))]
+
+        Radius(Xk) will equal Sqrt(a^2 + b^2), where a and b are the real and imaginary parts of the sum above
+        Theta(Xk) will equal Arctan(b/a).
+      */
+
   calculateCoefficients = () => {
     const { lines, initialHeight, initialWidth, numCircles } = this.state;
-    const l = lines.length;
+    const N = lines.length;
+    const twoPi = 2 * Math.PI;
+    const offset = numCircles / 2;
 
-    let r = [];
-    let theta = [];
+    let u = []; //Real component of Xn
+    let v = []; //Imaginary component of Xn
 
-    //Calculate r and theta for each coordinate
-    for (let i = 0; i < l; i++) {
-      //Adjust x and y such that the center of screen = (0,0)
-      const x = lines[i].x - initialWidth / 2;
-      const y = initialHeight / 2 - lines[i].y;
-
-      //Calculate the R and θ components from the X and Y components
-      r.push(Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)));
-      let arctan = Math.atan(y / x);
-
-      //Give θ the domain 0 < θ < 2π
-      if (x < 0) {
-        arctan += (Math.PI * 3) / 2;
-      } else {
-        arctan += Math.PI / 2;
-      }
-      theta.push(arctan);
+    //Convert x and y to real and imaginary components on the complex plane
+    //The center of the screen is 0 + 0i.
+    for (let i = 0; i < N; i++) {
+      u.push(lines[i].x - initialWidth / 2);
+      v.push(initialHeight / 2 - lines[i].y);
     }
 
-    //Calculate { Cn(r,θ) | n = { -50 ... 50} }
-    let cR = [];
-    let cTheta = [];
-    for (let i = 0; i < numCircles; i++) {
-      //Get the X and Y component of each epicycle circle
-      let CnX = 0;
-      let CnY = 0;
-      for (let t = 0; t < l; t++) {
-        //X component of Cn = Sum over T( r(t) * cos(θ(t) - 2πn(t/total t)))/total t
-        //Y component of Cn = Sum over T( r(t) * sin(θ(t) - 2πn(t/total t)))/total t
-        CnX +=
-          r[t] * Math.cos(theta[t] - (2 * Math.PI * (i - 50) * (t + 1)) / l);
-        CnY +=
-          r[t] * Math.sin(theta[t] - (2 * Math.PI * (i - 50) * (t + 1)) / l);
-      }
-      CnX /= l;
-      CnY /= l;
+    let epicycleCircles = [];
 
-      //Calculate the R and θ components from the X and Y components
-      cR[i] = Math.sqrt(Math.pow(CnX, 2) + Math.pow(CnY, 2));
-      cTheta[i] = Math.atan(CnY / CnX);
+    //Xk will loop from 0 to numCircles, but will store the values from
+    //-numCircles/2 to numCircles/2
+    for (let k = 0; k <= numCircles; k++) {
+      let a = 0;
+      let b = 0;
+      const kPrime = k - offset;
 
-      //Give θ the domain 0 < θ < 2π
-      if (cTheta[i] < 0) {
-        cTheta[i] += (Math.PI * 3) / 2;
-      } else {
-        cTheta[i] += Math.PI / 2;
+      for (let n = 0; n < N; n++) {
+        const cosTerm = Math.cos((twoPi * kPrime * n) / N);
+        const sinTerm = Math.sin((twoPi * kPrime * n) / N);
+        a += u[n] * cosTerm + v[n] * sinTerm;
+        b += v[n] * cosTerm - u[n] * sinTerm;
       }
+
+      a /= N;
+      b /= N;
+
+      const r = Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));
+      let theta = Math.atan2(b, a);
+      if (theta < 0) theta += 2 * Math.PI;
+      epicycleCircles.push({ r, theta, kPrime });
     }
 
-    this.setState({ cR, cTheta });
+    //Sort the circles by radius length
+    epicycleCircles.sort(function (a, b) {
+      return b.r - a.r;
+    });
+
+    this.setState({ epicycleCircles });
   };
 
   clearDrawing = () => {
     this.setState({
       lines: [],
-      cR: [],
-      cTheta: [],
+      epicycleCircles: [],
       isDrawing: false,
       drawingComplete: false,
     });
